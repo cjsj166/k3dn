@@ -1,0 +1,9 @@
+numpy==1.24.1
+cupy-cuda11x
+einops==0.4.0
+fvcore==0.1.5.post20220414
+scikit-image
+scikit-learn
+lpips
+opencv-python
+ninja

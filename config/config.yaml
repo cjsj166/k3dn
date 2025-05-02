@@ -1,0 +1,17 @@
+name: config
+
+datasets:
+    trg_resolution: [1152, 1792]
+    src_resolution: [1120,1680]
+
+dp_network:    
+    network_L:   
+        base_channel: 48 
+        ed_res: 4
+        ld_res: 8
+        truncate: 100
+        window_size: [18,14]
+        psf_out_layer: 4
+        disp:
+            pool_size: [5,4]
+            pad_scale: [288,224]
