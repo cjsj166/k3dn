@@ -1,2 +1,7 @@
 *.pt
-
+*.pdf
+resultsdp_2_ft_dpdd/
+results/
+*.pyc
+datasets/
+__pycache__/

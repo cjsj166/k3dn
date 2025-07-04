@@ -179,7 +179,7 @@ class SingleImage(nn.Module):
     def __init__(self,config):
         super().__init__()
         
-       	self.model = nn.Sequential(
+        self.model = nn.Sequential(
             BasicConv(3, 32, kernel_size=3, padding=1),
             BasicConv(32, 64, kernel_size=3, stride=1, padding=1),
             BasicConv(64, 128, kernel_size=3, stride=1, padding=4, dilation=4),
@@ -193,7 +193,7 @@ class SingleImage(nn.Module):
             BasicConv(64, 64, kernel_size=3, padding=1)
             )
         
-       	self.avgpool = nn.AvgPool2d(config["pool_size"])
+        self.avgpool = nn.AvgPool2d(config["pool_size"])
         self.fc = nn.Sequential(
             nn.Linear(64, 256),
             nn.LeakyReLU(0.2,True)

@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser(description='')
 
-parser.add_argument('--input_dir', default='../data/dd_dp_dataset_canon/dd_dp_dataset_png/test_c/target', type=str, help='Directory of validation images')
+parser.add_argument('--input_dir', default='datasets/dpdd_dataset/test_c/target', type=str, help='Directory of validation images')
 parser.add_argument('--checkpoints', default='checkpoints/dp_2_ft/best.pt', type=str, help='Path to weights')
 parser.add_argument('--cuda_device', default=0, type=int, help='device to use')
 parser.add_argument("--exp_config", default = "config/config.yaml", type = str)
@@ -29,9 +29,7 @@ parser.add_argument("--network_type", default = 2, type = int)
 parser.add_argument("--dual_pixel", default = 1, type = int)
 parser.add_argument("--srp", default = 1, type = int)
 
-
 args = parser.parse_args()
-
 
 exp_config = yaml.load(open(args.exp_config, mode='r'), Loader=Loader)    
 exp_config["dual_pixel"] = args.dual_pixel
@@ -50,6 +48,8 @@ if args.srp == 1:
     model  = ModelFT(model_config,dual_pixel = exp_config["dual_pixel"])
 else:
     model  = Model(model_config,dual_pixel = exp_config["dual_pixel"])
+
+print(model)
 model.load_state_dict(torch.load(args.checkpoints,map_location = "cpu"))
 model.eval()
 model.set_inference_mode()
@@ -72,23 +72,19 @@ def norm_img(img, max_value):
 
 def get_ddblur_dataset(path):
     files = glob.glob(os.path.join(path,"*.png"))
-    trg_src = dict(zip(np.load("file_names/test_trg.npy"),np.load("file_names/test_src.npy")))
     
     all_files = []
     for target_rgb in files:
-        name = target_rgb.split(os.sep)[-1].replace(".png","")
         input_left = os.path.join(
-            *target_rgb.replace("/target/", "/source/").replace("test_c", "test_l").split(os.sep)[:-1],
-            trg_src[name]+"_L.png")
+            *target_rgb.replace("/target/", "/source/").replace("test_c", "test_l").split(os.sep))
         input_right = os.path.join(
-            *target_rgb.replace("/target/", "/source/").replace("test_c", "test_r").split(os.sep)[:-1],
-            trg_src[name]+"_R.png")
+            *target_rgb.replace("/target/", "/source/").replace("test_c", "test_r").split(os.sep))
         input_center = os.path.join(
-            *target_rgb.replace("/target/", "/source/").split(os.sep)[:-1],
-            trg_src[name]+".png")
-            
-        assert os.path.exists(input_left)  and os.path.exists(input_right)  
-        assert os.path.exists(target_rgb)  and os.path.exists(input_center)
+            *target_rgb.replace("/target/", "/source/").split(os.sep))
+        
+        # breakpoint()
+        assert os.path.exists(input_left)  and os.path.exists(input_right), f"input_left: {input_left} or input_right: {input_right} doesn't exist"
+        assert os.path.exists(target_rgb)  and os.path.exists(input_center), f"target_rgb: {target_rgb} or input_center: {input_center} doesn't exist"
             
         all_files.append([
             input_left,
@@ -150,7 +146,7 @@ def mae(img1, img2):
     return np.mean([mae_0,mae_1,mae_2])
 
 def ssim(img1, img2, PIXEL_MAX = 1.0):
-    return structural_similarity(img1, img2, data_range=PIXEL_MAX, multichannel=True)
+    return structural_similarity(img1, img2, data_range=PIXEL_MAX, channel_axis=-1)
 
 def psnr(img1, img2, PIXEL_MAX = 1.0):
     mse_ = np.mean( (img1 - img2) ** 2 )
@@ -158,7 +154,7 @@ def psnr(img1, img2, PIXEL_MAX = 1.0):
 
 with torch.no_grad():
 
-    breakpoint()
+    # breakpoint()
     for i,data in enumerate(dataset):
         
         data = {k:v.to(device).unsqueeze(0) for k,v in data.items()}
@@ -168,7 +164,6 @@ with torch.no_grad():
             deblur = model(left,right)
         else:
             deblur = model(input_center)
-        
 
         deblur = torch.nn.functional.interpolate(deblur,exp_config["datasets"]["src_resolution"], mode ="bicubic")
 

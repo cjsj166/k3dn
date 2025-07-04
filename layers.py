@@ -6,7 +6,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from watt import watt
-from watt_local_attention import watt as watt_cpu
+# from watt_local_attention import watt as watt_cpu
 from einops import rearrange
 
 class EqualLinear(nn.Module):
@@ -54,6 +54,7 @@ class InvertibleDepthwiseConv2d(nn.Module):
         idx = (fdomain_size - kernel_size)//2
         self.idx_row = (idx, idx + kernel_size)
         self.idx_col = (idx, idx + kernel_size//2 + 1)
+        # print('kernel_size', kernel_size)
         
     def get_weight(self, inverse = False):
 
@@ -66,7 +67,9 @@ class InvertibleDepthwiseConv2d(nn.Module):
 
         weight = torch.fft.irfft2(weight)
 
+        # print('weight.shape', weight.shape)
         weight_left = weight[...,self.idx_row[0]:self.idx_row[1],self.idx_col[0]:self.idx_col[1]]
+        # print('weight_left.shape', weight_left.shape)
 
         weight_right = torch.flip(weight_left[...,:-1],[-1])
         weight = torch.cat((weight_left,weight_right),-1)
@@ -113,10 +116,10 @@ class InvertibleDepthwiseConv2dWrapper(nn.Module):
         weight = self.get_weight()
         weight = weight.view(
              self.in_channel, 1, self.kernel_size, self.kernel_size
-        )
+        ) # Kernels to be used for deblur
         out = F.conv2d(
             input, weight, bias = None, stride = 1, padding=self.padding, dilation = 1, groups= self.in_channel
-        )
+        ) # Deblur
         
         return out
     
@@ -228,7 +231,7 @@ class PSFBlock(nn.Module):
         self.inter = Interaction(in_channel,style_dim,9)
     def forward(self, x, style, rev = False):
         skip = x
-        w = self.conv1.get_weight(False)[:,:,:,:,:9//2+1]
+        w = self.conv1.get_weight(False)[:,:,:,:,:9//2+1] # Retrieving learned kernel
         style = self.inter(style,w)
         if rev:
             x = self.conv2(x,style,rev)

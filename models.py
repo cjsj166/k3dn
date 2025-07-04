@@ -57,7 +57,7 @@ class Model(nn.Module):
         res_3 = rearrange(res_3, "(b p1 p2) c w h -> b c (p1 w) (p2 h)", p1 = h//self.window_size[0], p2 =w//self.window_size[1])
         z = self.Decoder[0](torch.cat((res_2, self.feat_extract[3](res_3)),1))
         z = self.Decoder[1](torch.cat((res_1, self.feat_extract[4](z)),1))
-        x   = self.Decoder[2](torch.cat((x, self.feat_extract[5](z)),1))
+        x = self.Decoder[2](torch.cat((x, self.feat_extract[5](z)),1))
         x = self.out(x)
         return torch.clip(x,-1,1)
     
@@ -104,14 +104,14 @@ class ModelFT(Model):
         for param in self.srp.parameters():
             param.requires_grad = True
         
-    def _forward_impl(self,x, disp_vector, rev = False):
+    def _forward_impl(self,x, disp_vector, rev = False): # disp_vector is the correlation volume
         
         res_1 = self.Encoder[0](self.feat_extract[0](x))
         res_2 = self.Encoder[1](self.feat_extract[1](res_1))
         res_3 = self.Encoder[2](self.feat_extract[2](res_2))
         
         _,_, h,w = res_3.size()
-        res_3 = rearrange(res_3, "b c (p1 w) (p2 h) -> (b p1 p2) c w h", p1 = h//self.window_size[0], p2 =w//self.window_size[1])
+        res_3 = rearrange(res_3, "b c (p1 w) (p2 h) -> (b p1 p2) c w h", p1 = h//self.window_size[0], p2 =w//self.window_size[1]) # pathify feature to reduce time complexity of deblurring
         
         for m in self.deblur:
             res_3 = m(res_3,disp_vector,rev)
